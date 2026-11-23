@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>China-Reise Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@500;700&display=swap">
+<style>
+/* Layout: ein Hero mit Tagesband, darunter Route mit Zeitleiste, Spots-Raster, Checkliste, Hinweise.
+   Farben: Jade als Akzent, sechs Stadtfarben, Bernstein/Grün/Rot nur als Status. */
+:root{
+  color-scheme:light; --bg:#EDF1EF; --surface:#FFFFFF; --surface-2:#E3EAE7; --ink:#12201D; --muted:#566662; --line:#CDD8D4;
+  --accent:#17695C; --accent-ink:#FFFFFF; --accent-soft:#D3E8E3;
+  --warn:#8A5200; --warn-soft:#F5E5C4; --ok:#1B6F37; --ok-soft:#D2EAD9; --bad:#A93428;
+  --c1:#17695C; --c2:#3A56A8; --c3:#946010; --c4:#AC3F3B; --c5:#27708E; --c6:#76499E; --on-c:#FFFFFF;
+  --f-head:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --f-body:'Instrument Sans','Segoe UI',system-ui,sans-serif;
+  --f-hz:'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1715; --surface:#16231F; --surface-2:#1E2E29; --ink:#E6EFEC; --muted:#9BB0AA; --line:#2B3E38;
+  --accent:#5CC4AE; --accent-ink:#0E1715; --accent-soft:#1C3A34;
+  --warn:#E3B15C; --warn-soft:#3A2F14; --ok:#6FCB8B; --ok-soft:#17321F; --bad:#F08A82;
+  --c1:#5CC4AE; --c2:#8EA4F0; --c3:#E0B04F; --c4:#F08A82; --c5:#6CB8DB; --c6:#B795DC; --on-c:#0E1715; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1715; --surface:#16231F; --surface-2:#1E2E29; --ink:#E6EFEC; --muted:#9BB0AA; --line:#2B3E38;
+  --accent:#5CC4AE; --accent-ink:#0E1715; --accent-soft:#1C3A34;
+  --warn:#E3B15C; --warn-soft:#3A2F14; --ok:#6FCB8B; --ok-soft:#17321F; --bad:#F08A82;
+  --c1:#5CC4AE; --c2:#8EA4F0; --c3:#E0B04F; --c4:#F08A82; --c5:#6CB8DB; --c6:#B795DC; --on-c:#0E1715; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-block:0 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--f-head);margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hz{font-family:var(--f-hz);font-weight:500;color:var(--muted);font-size:.85em;letter-spacing:.02em}
+
+/* Hero */
+.hero{padding-block:36px 8px;min-width:0}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.hero h1{font-size:clamp(2.1rem,7vw,3.8rem);line-height:1.02;font-weight:700;margin-top:8px}
+.hero h1 .arrow{color:var(--accent)}
+.hero .hzline{font-family:var(--f-hz);font-size:clamp(1rem,3vw,1.4rem);color:var(--muted);margin-top:6px}
+.count{margin-top:14px;font-weight:600;font-size:1.05rem}
+.count small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.stats{display:flex;flex-wrap:wrap;gap:6px 28px;margin-top:18px}
+.stat b{font:700 1.5rem/1.1 var(--f-head);font-variant-numeric:tabular-nums;display:block}
+.stat span{font-size:12px;color:var(--muted)}
+.strip{position:relative;height:46px;margin-top:22px;background:var(--surface-2);border-radius:8px;overflow:hidden}
+.seg-b{position:absolute;top:0;bottom:0;background:var(--cc);color:var(--on-c);padding:6px 6px 0;font:600 12px/1.2 var(--f-body);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-right:2px solid var(--bg)}
+.seg-b.tail{background:transparent;color:var(--muted);font-weight:500}
+.ticks{display:flex;margin-top:4px}
+.ticks span{flex:1;text-align:center;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:0}
+.ticks span.today{color:var(--accent-ink);background:var(--accent);border-radius:4px;font-weight:700}
+.hero-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted);border:0;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.live{background:var(--accent);color:var(--accent-ink)}
+button.pill{cursor:pointer}
+
+/* Nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;gap:4px;overflow-x:auto;padding-block:10px;margin-top:18px;border-bottom:1px solid var(--line)}
+.nav a{padding:5px 12px;border-radius:99px;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;white-space:nowrap}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+section{padding-top:40px;scroll-margin-top:60px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.sec-head h2{font-size:1.7rem}
+.sec-head p{color:var(--muted);font-size:13px;width:100%}
+
+/* Route */
+.item{display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;position:relative}
+.item::before{content:"";position:absolute;left:41px;top:0;bottom:0;width:2px;background:var(--line)}
+.item:first-child::before{top:20px}.item:last-child::before{bottom:calc(100% - 20px)}
+.rail{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;padding-top:14px}
+.dates{background:var(--cc);color:var(--on-c);border-radius:8px;padding:5px 7px;text-align:center;font-size:12px;line-height:1.3;font-variant-numeric:tabular-nums;width:76px}
+.dates b{display:block;font-size:13px}
+.ico{width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid var(--line);display:grid;place-items:center;color:var(--muted);margin-top:4px}
+.ico svg{width:15px;height:15px;fill:currentColor}
+.body{min-width:0;padding-block:8px}
+.stop .body{background:var(--surface);border-radius:12px;padding:16px 18px;margin-block:8px;border-left:4px solid var(--cc)}
+.stop.now .body{outline:2px solid var(--accent)}
+.row{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap}
+.row .grow{flex:1}
+.stop h3{font-size:1.4rem}
+.meta{color:var(--muted);font-size:13px;margin-top:4px}
+.note{margin-top:8px;font-size:14px;max-width:70ch}
+.leg .body h4{font:600 14px/1.35 var(--f-body)}
+.leg .body{padding-block:10px}
+.facts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:13px}
+.fact i{font-style:normal;color:var(--muted);margin-right:5px}
+.tip{margin-top:6px;font-size:13px;color:var(--muted);max-width:75ch}
+.leg .tip{color:var(--ink);opacity:.85}
+
+/* Spots */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--cc,var(--muted))}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.field{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;min-width:0}
+.grp{margin-top:22px}
+.grp h3{font-size:1.15rem;display:flex;align-items:center;gap:8px}
+.grp h3 .dot{width:10px;height:10px;border-radius:50%;background:var(--cc,var(--muted))}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:10px}
+.spot{background:var(--surface);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0;border:1px solid transparent}
+.spot.status-done{opacity:.6}
+.spot.status-plan{border-color:var(--accent)}
+.spot h4{font-size:1.02rem;line-height:1.25}
+.spot .top{display:flex;gap:8px;align-items:center}
+.badge{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:4px;padding:1px 6px}
+.b-must{background:var(--accent);color:var(--accent-ink)}
+.b-nice{background:var(--accent-soft);color:var(--accent)}
+.b-opt{background:var(--surface-2);color:var(--muted)}
+.cat{font-size:12px;color:var(--muted)}
+.spot .tip{margin-top:0;flex:1}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:6px}
+.seg button{flex:1;border:0;background:transparent;padding:4px 0;font-size:12px;font-weight:600;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* Todos & Hinweise */
+.todos{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--surface);border-radius:12px;padding:16px;min-width:0}
+.card h3{font-size:1.05rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card h3 small{font:500 12px var(--f-body);color:var(--muted)}
+.bar{height:4px;border-radius:2px;background:var(--surface-2);margin:8px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.todo{display:flex;gap:8px;align-items:flex-start;padding:5px 0}
+.todo label{display:flex;gap:9px;flex:1;min-width:0;cursor:pointer}
+.todo input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.todo input:checked+span{text-decoration:line-through;color:var(--muted)}
+.todo .x{border:0;background:transparent;color:var(--muted);padding:0 4px;font-size:16px;line-height:1}
+.addrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.addrow .field{flex:1;min-width:140px}
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.hint{border-left:4px solid var(--accent)}
+.hint.warn{border-left-color:var(--warn)}
+.hint p{font-size:14px;margin-top:6px;white-space:pre-line}
+.hint .btn{margin-top:10px}
+
+/* Karte */
+.mapbox{background:var(--surface);border-radius:12px;overflow:hidden}
+#map{height:min(68vh,540px);min-height:340px;width:100%}
+.wegs{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:0}
+.wegs li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;position:relative;padding-bottom:4px}
+.wegs .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 12px var(--f-body);color:var(--accent-ink);background:var(--accent);margin-top:2px;position:relative;z-index:1}
+.wegs .n.nice{background:var(--c5);color:var(--on-c)}.wegs .n.opt{background:var(--muted);color:var(--bg)}
+.wegs li::before{content:"";position:absolute;left:12px;top:28px;bottom:-2px;width:2px;background:var(--line)}
+.wegs li:last-child::before{display:none}
+.wegs .nm{font-weight:600}
+.wegs .go{font-size:13px;color:var(--muted);padding:4px 0 10px}
+.exc{margin-top:22px}.exc h3{font-size:1.05rem}
+.exc ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.exc li{background:var(--surface);border-radius:10px;padding:10px 12px;font-size:13px;min-width:0}
+.exc li b{display:block;font-size:14px}
+.cons{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px}
+.cons li{background:var(--surface);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;align-items:start;font-size:13px}
+.cons b{font-size:14px}
+.cons .ico{margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:22px;height:0;border-top:3px solid var(--accent);vertical-align:middle;margin-right:6px}
+.legend i.d{border-top:3px dashed var(--c4)}
+
+/* Anmeldung */
+.auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:16px}
+.auth form{background:var(--surface);border-radius:14px;padding:24px;width:min(420px,100%);display:grid;gap:12px}
+.auth h2{font-size:1.4rem}.auth p{color:var(--muted);font-size:14px}
+.auth .field{font-size:15px;width:100%}
+
+/* Modal */
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog::backdrop{background:rgba(8,16,14,.55)}
+dialog form{padding:20px;display:grid;gap:12px;overflow:auto;max-height:calc(100vh - 34px)}
+dialog h3{font-size:1.2rem}
+dialog label{display:grid;gap:3px;font-size:12px;font-weight:600;color:var(--muted)}
+dialog .field{font-size:14px;width:100%}
+dialog textarea{resize:vertical}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dlg-actions .sp{margin-right:auto}
+
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;margin-top:14px;font-size:13px;font-weight:600}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:24px;color:var(--muted);text-align:center}
+body.ro .w{display:none!important}
+@media (max-width:560px){
+  .item{grid-template-columns:62px minmax(0,1fr);gap:10px}.item::before{left:30px}.dates{width:58px;font-size:11px;padding:4px 3px}
+  .stop .body{padding:14px}.grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow" id="range">Reisedaten werden geladen</div>
+    <h1><span id="h1a">Shanghai</span> <span class="arrow">&rarr;</span> <span id="h1b">Peking</span></h1>
+    <div class="hzline" id="hz">上海 → 北京</div>
+    <div class="count" id="count"></div>
+    <div class="stats" id="stats"></div>
+    <div id="stripWrap"></div>
+    <div class="hero-actions w"><button class="btn" data-act="trip">Reisedaten &amp; Termine verschieben</button> <button class="btn ghost" data-act="logout">Abmelden</button></div>
+    <div class="banner" id="banner" hidden></div>
+  </header>
+
+  <nav class="nav" aria-label="Bereiche">
+    <a href="#route">Route &amp; Transport</a><a href="#karte">Karte</a><a href="#spots">Spots</a><a href="#todos">Checkliste</a><a href="#hinweise">Hinweise</a>
+  </nav>
+
+  <section id="route">
+    <div class="sec-head"><h2>Route &amp; Transport</h2>
+      <div class="w"><button class="btn sm" data-act="add" data-col="stops">+ Stopp</button> <button class="btn sm" data-act="add" data-col="legs">+ Fahrt</button></div>
+      <p>Von Stadt zu Stadt, mit Verkehrsmittel, Dauer und Buchungsstatus. Tippe auf den Status, um eine Fahrt als gebucht zu markieren.</p></div>
+    <div id="routeList"></div>
+  </section>
+
+  <section id="karte">
+    <div class="sec-head"><h2>Karte</h2>
+      <p>Gesamtkarte mit allen Verbindungen zwischen den Stationen. Wähle eine Stadt, um ihre Spots in einer Vorschlags-Reihenfolge mit Wegen zu sehen. Spots brauchen dafür Längen- und Breitengrad (beim Bearbeiten eintragbar).</p></div>
+    <div class="filters" id="mapChips"></div>
+    <div class="mapbox"><div id="map" role="img" aria-label="Karte der Reise"></div></div>
+    <div id="mapInfo"></div>
+  </section>
+
+  <section id="spots">
+    <div class="sec-head"><h2>Spots</h2>
+      <div class="w"><button class="btn sm" data-act="add" data-col="spots">+ Spot</button></div>
+      <p>Alles, was du sehen, essen oder erleben willst. Muss, Gern und Optional steuern die Prioritäten.</p></div>
+    <div class="filters" id="chips"></div>
+    <div class="filters">
+      <select class="field" id="fPrio" aria-label="Priorität"><option value="all">Alle Prioritäten</option><option value="must">Muss</option><option value="nice">Gern</option><option value="opt">Optional</option></select>
+      <select class="field" id="fStatus" aria-label="Status"><option value="all">Alle Stati</option><option value="idea">Idee</option><option value="plan">Eingeplant</option><option value="done">Besucht</option></select>
+      <input class="field" id="fQ" type="search" placeholder="Suchen" aria-label="Suchen">
+    </div>
+    <div id="spotList"></div>
+  </section>
+
+  <section id="todos">
+    <div class="sec-head"><h2>Checkliste</h2><p>Vorbereitung, Buchungen, Apps und Zahlung. Gruppen entstehen automatisch beim Hinzufügen.</p></div>
+    <div class="todos" id="todoList"></div>
+    <form class="addrow w" id="todoForm">
+      <input class="field" id="todoText" placeholder="Neue Aufgabe" required aria-label="Neue Aufgabe">
+      <input class="field" id="todoGroup" list="groups" placeholder="Gruppe" aria-label="Gruppe"><datalist id="groups"></datalist>
+      <button class="btn primary" type="submit">Hinzufügen</button>
+    </form>
+  </section>
+
+  <section id="hinweise">
+    <div class="sec-head"><h2>Hinweise</h2>
+      <div class="w"><button class="btn sm" data-act="add" data-col="notes">+ Hinweis</button></div>
+      <p>Stand der Angaben vor der Buchung prüfen. Visa- und Einreisefragen bitte über das Auswärtige Amt oder die chinesische Botschaft klären.</p></div>
+    <div class="notes" id="noteList"></div>
+  </section>
+</div>
+
+<div class="auth" id="auth" hidden>
+  <form id="authForm">
+    <h2>China-Reise</h2>
+    <p>Melde dich mit deiner E-Mail-Adresse an. Du bekommst einen Link, der dich einloggt. Nur freigeschaltete Adressen sehen die Reise.</p>
+    <label for="authMail" style="font-size:12px;font-weight:600;color:var(--muted)">E-Mail</label>
+    <input class="field" id="authMail" type="email" autocomplete="email" required>
+    <button class="btn primary" type="submit">Login-Link senden</button>
+    <p id="authMsg" role="status"></p>
+  </form>
+</div>
+
+<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var DAY=864e5, DOW=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function pd(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?Date.UTC(+m[1],+m[2]-1,+m[3]):null}
+function two(n){return String(n).padStart(2,'0')}
+function fmt(s,w){var t=pd(s);if(t==null)return '';var d=new Date(t);return (w?DOW[d.getUTCDay()]+' ':'')+two(d.getUTCDate())+'.'+two(d.getUTCMonth()+1)+'.'}
+function iso(t){return new Date(t).toISOString().slice(0,10)}
+function todayT(){var d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())}
+function bySeq(a,b){return (a.seq||0)-(b.seq||0)}
+
+var MODES=['Flug','Hochgeschwindigkeitszug','Zug','Nachtzug','Bus','Metro','Taxi / Auto','Fähre','Sonstiges'];
+var CATS=['Sehenswürdigkeit','Natur','Museum','Essen & Trinken','Erlebnis','Ausflug','Viertel'];
+var PRIO={must:'Muss',nice:'Gern',opt:'Optional'}, STAT={idea:'Idee',plan:'Eingeplant',done:'Besucht'};
+var ICON={
+ plane:'M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z',
+ train:'M12 2c-4 0-8 .5-8 4v9.5C4 17.4 5.6 19 7.5 19L6 20.5v.5h2l2-2h4l2 2h2v-.5L16.5 19c1.9 0 3.5-1.6 3.5-3.5V6c0-3.5-3.6-4-8-4zM7.5 17a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM11 10H6V6h5v4zm2 0V6h5v4h-5zm3.5 7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z',
+ bus:'M4 16c0 .9.4 1.7 1 2.2V20c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h8v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1.8c.6-.5 1-1.3 1-2.2V6c0-3.5-3.6-4-8-4S4 2.5 4 6v10zm3.5 1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm9 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM18 11H6V6h12v5z',
+ go:'M5 11h11.2l-4.6-4.6L13 5l7 7-7 7-1.4-1.4 4.6-4.6H5z'
+};
+function icon(m){m=(m||'').toLowerCase();var k=/flug/.test(m)?'plane':/zug|bahn/.test(m)?'train':/bus/.test(m)?'bus':'go';return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+ICON[k]+'"/></svg>'}
+
+/* Schemata für das Bearbeiten-Fenster */
+var SCH={
+ stops:{label:'Stopp',f:[['city','Stadt','text'],['hanzi','Schriftzeichen','text'],['arrive','Ankunft','date'],['depart','Abreise','date'],['area','Unterkunft / Gegend','text'],['note','Notizen, Wetter','area'],['lng','Längengrad (Karte)','number'],['lat','Breitengrad (Karte)','number'],['seq','Position (Reihenfolge)','number']]},
+ legs:{label:'Fahrt',f:[['from','Von','text'],['to','Nach','text'],['mode','Verkehrsmittel','select',function(){return MODES.map(function(x){return [x,x]})}],['date','Datum','date'],['dur','Dauer','text'],['price','Preis ca.','text'],['bookFrom','Buchbar ab','text'],['booked','Status','bool'],['tip','Hinweise','area'],['seq','Position (Reihenfolge)','number']]},
+ spots:{label:'Spot',f:[['stop','Stadt','select',function(){return S.stops.slice().sort(bySeq).map(function(s){return [s.id,s.city]})}],['name','Name','text'],['hanzi','Schriftzeichen','text'],['cat','Kategorie','select',function(){return CATS.map(function(x){return [x,x]})}],['prio','Priorität','select',function(){return Object.keys(PRIO).map(function(k){return [k,PRIO[k]]})}],['status','Status','select',function(){return Object.keys(STAT).map(function(k){return [k,STAT[k]]})}],['dur','Dauer','text'],['cost','Kosten / Öffnung','text'],['tip','Tipp','area'],['via','Anreise (bei Ausflügen)','text'],['lng','Längengrad (Karte)','number'],['lat','Breitengrad (Karte)','number']]},
+ notes:{label:'Hinweis',f:[['title','Titel','text'],['body','Text','area'],['tone','Art','select',function(){return [['info','Info'],['warn','Wichtig']]}]]},
+ todos:{label:'Aufgabe',f:[['text','Aufgabe','text'],['group','Gruppe','text'],['done','Status','bool2']]}
+};
+
+var S={trip:null,stops:[],legs:[],spots:[],todos:[],notes:[]};
+var loaded={}, db=null, F={stop:'all',prio:'all',status:'all',q:''}, raf=0, errShown=false;
+var COLS=['stops','legs','spots','todos','notes'];
+
+function banner(t){var b=$('#banner');b.textContent=t||'';b.hidden=!t}
+function sched(){if(!raf)raf=requestAnimationFrame(function(){raf=0;render()})}
+function cc(i){return 'var(--c'+((i%6)+1)+')'}
+
+function tripRange(){
+  var st=S.stops.slice().sort(bySeq), a=S.trip&&S.trip.startDate, b=S.trip&&S.trip.endDate;
+  if(!a&&st.length){var m=Math.min.apply(null,st.map(function(s){return pd(s.arrive)}).filter(Boolean));if(isFinite(m))a=iso(m-DAY)}
+  if(!b&&st.length){var M=Math.max.apply(null,st.map(function(s){return pd(s.depart)}).filter(Boolean));if(isFinite(M))b=iso(M)}
+  return [a,b];
+}
+function nights(s){var a=pd(s.arrive),d=pd(s.depart);return a!=null&&d!=null?Math.max(0,Math.round((d-a)/DAY)):0}
+
+function render(){
+  var stops=S.stops.slice().sort(bySeq), legs=S.legs.slice().sort(bySeq), idx={};
+  stops.forEach(function(s,i){idx[s.id]=i});
+  var now=todayT(), r=tripRange(), t0=pd(r[0]), t1=pd(r[1]);
+
+  /* Hero */
+  if(stops.length){
+    $('#h1a').textContent=stops[0].city||'';$('#h1b').textContent=stops[stops.length-1].city||'';
+    var h0=stops[0].hanzi||'',h1=stops[stops.length-1].hanzi||'';$('#hz').textContent=h0&&h1?h0+' → '+h1:'';
+  }
+  var total=t0!=null&&t1!=null?Math.round((t1-t0)/DAY)+1:0;
+  $('#range').textContent=t0!=null?fmt(r[0],true)+' bis '+fmt(r[1],true)+new Date(t1).getUTCFullYear()+' · '+total+' Tage':'Reisedaten fehlen';
+  var c='',sub='';
+  if(t0!=null){
+    if(now<t0){var d=Math.round((t0-now)/DAY);c='Noch '+d+(d===1?' Tag':' Tage')+' bis zum Abflug';sub='Abflug am '+fmt(r[0],true)+', ganz früh am Morgen'}
+    else if(now<=t1){var n=Math.round((now-t0)/DAY)+1;var cur=stops.filter(function(s){return pd(s.arrive)<=now&&now<=pd(s.depart)})[0];c='Reisetag '+n+' von '+total;sub=cur?'Gerade in '+cur.city:''}
+    else{c='Reisezeitraum liegt in der Vergangenheit';sub='Falls die Reise verschoben wurde, passe die Termine unter „Reisedaten“ an.'}
+  }
+  $('#count').innerHTML=esc(c)+(sub?'<small>'+esc(sub)+'</small>':'');
+  var nn=stops.reduce(function(a,s){return a+nights(s)},0), bk=legs.filter(function(l){return l.booked}).length;
+  var sp=S.spots, planned=sp.filter(function(s){return s.status==='plan'||s.status==='done'}).length;
+  var td=S.todos.filter(function(t){return t.done}).length;
+  $('#stats').innerHTML=[[stops.length,'Stationen'],[nn,'Nächte'],[planned+' / '+sp.length,'Spots eingeplant'],[bk+' / '+legs.length,'Fahrten gebucht'],[td+' / '+S.todos.length,'Aufgaben erledigt']].map(function(x){return '<div class="stat"><b>'+esc(x[0])+'</b><span>'+x[1]+'</span></div>'}).join('');
+
+  /* Tagesband */
+  if(t0!=null&&total&&stops.length){
+    var seg='',tail='';
+    stops.forEach(function(s,i){var a=pd(s.arrive),b=pd(s.depart);if(a==null||b==null)return;var l=(a-t0)/DAY/total*100,w=(b-a)/DAY/total*100;
+      seg+='<div class="seg-b" style="left:'+l+'%;width:'+w+'%;--cc:'+cc(i)+'" title="'+esc(s.city)+'">'+esc(s.city)+'</div>'});
+    var first=pd(stops[0].arrive);if(first!=null&&first>t0)seg+='<div class="seg-b tail" style="left:0;width:'+((first-t0)/DAY/total*100)+'%">Flug</div>';
+    var lastD=pd(stops[stops.length-1].depart);if(lastD!=null&&lastD<t1+DAY)seg+='<div class="seg-b tail" style="left:'+((lastD-t0)/DAY/total*100)+'%;width:'+((t1+DAY-lastD)/DAY/total*100)+'%">Heim</div>';
+    var tk='';for(var i=0;i<total;i++){var tt=t0+i*DAY;tk+='<span'+(tt===now?' class="today"':'')+'>'+new Date(tt).getUTCDate()+'</span>'}
+    $('#stripWrap').innerHTML='<div class="strip" role="img" aria-label="Reiseverlauf nach Tagen">'+seg+'</div><div class="ticks">'+tk+'</div>';
+  } else $('#stripWrap').innerHTML='';
+
+  /* Route */
+  var items=stops.map(function(x){return {t:'s',x:x}}).concat(legs.map(function(x){return {t:'l',x:x}})).sort(function(a,b){return bySeq(a.x,b.x)});
+  if(!items.length&&loaded.stops&&loaded.legs)$('#routeList').innerHTML='<div class="empty">Noch keine Route. Füge einen Stopp hinzu oder bitte Claude, die Route zu ergänzen.</div>';
+  else $('#routeList').innerHTML=items.map(function(it){
+    var x=it.x;
+    if(it.t==='s'){
+      var i=idx[x.id],cnt=S.spots.filter(function(s){return s.stop===x.id}),must=cnt.filter(function(s){return s.prio==='must'}).length;
+      var live=pd(x.arrive)<=now&&now<=pd(x.depart);
+      return '<article class="item stop'+(live?' now':'')+'" style="--cc:'+cc(i)+'"><div class="rail"><div class="dates"><b>'+esc(fmt(x.arrive,true))+'</b>bis<br>'+esc(fmt(x.depart,true))+'</div></div>'+
+       '<div class="body"><div class="row"><h3>'+esc(x.city)+' <span class="hz">'+esc(x.hanzi)+'</span></h3><span class="pill">'+nights(x)+(nights(x)===1?' Nacht':' Nächte')+'</span>'+(live?'<span class="pill live">jetzt hier</span>':'')+'<span class="grow"></span><button class="btn sm ghost w" data-act="edit" data-col="stops" data-id="'+esc(x.id)+'">Bearbeiten</button></div>'+
+       (x.area?'<p class="meta">Unterkunft: '+esc(x.area)+'</p>':'')+(x.note?'<p class="note">'+esc(x.note)+'</p>':'')+
+       '<div class="row" style="margin-top:12px"><button class="btn sm" data-act="gospots" data-id="'+esc(x.id)+'">'+cnt.length+' Spots ansehen'+(must?', '+must+' Muss':'')+'</button></div></div></article>';
+    }
+    var f=[['Datum',x.date?fmt(x.date,true):''],['Dauer',x.dur],['Preis',x.price],['Buchbar',x.bookFrom]].filter(function(p){return p[1]}).map(function(p){return '<span class="fact"><i>'+p[0]+'</i>'+esc(p[1])+'</span>'}).join('');
+    return '<article class="item leg"><div class="rail"><span class="ico">'+icon(x.mode)+'</span></div><div class="body"><div class="row"><h4>'+esc(x.mode)+': '+esc(x.from)+' &rarr; '+esc(x.to)+'</h4><span class="grow"></span>'+
+     '<button class="pill w '+(x.booked?'ok':'warn')+'" data-act="book" data-id="'+esc(x.id)+'" aria-pressed="'+(x.booked?'true':'false')+'">'+(x.booked?'Gebucht':'Noch offen')+'</button>'+
+     '<button class="btn sm ghost w" data-act="edit" data-col="legs" data-id="'+esc(x.id)+'">Bearbeiten</button></div><div class="facts">'+f+'</div>'+(x.tip?'<p class="tip">'+esc(x.tip)+'</p>':'')+'</div></article>';
+  }).join('');
+
+  /* Spots */
+  $('#chips').innerHTML='<button class="chip" data-act="fstop" data-id="all" aria-pressed="'+(F.stop==='all')+'">Alle ('+sp.length+')</button>'+stops.map(function(s,i){
+    return '<button class="chip" style="--cc:'+cc(i)+'" data-act="fstop" data-id="'+esc(s.id)+'" aria-pressed="'+(F.stop===s.id)+'"><span class="dot"></span>'+esc(s.city)+' ('+sp.filter(function(p){return p.stop===s.id}).length+')</button>'}).join('');
+  var q=F.q.toLowerCase();
+  var vis=sp.filter(function(s){return (F.stop==='all'||s.stop===F.stop)&&(F.prio==='all'||s.prio===F.prio)&&(F.status==='all'||(s.status||'idea')===F.status)&&(!q||((s.name||'')+' '+(s.hanzi||'')+' '+(s.tip||'')+' '+(s.cat||'')).toLowerCase().indexOf(q)>=0)});
+  var po={must:0,nice:1,opt:2};
+  function card(s){var st=s.status||'idea',pr=s.prio||'nice';
+    return '<article class="spot status-'+st+'"><div class="top"><span class="badge b-'+pr+'">'+(PRIO[pr]||pr)+'</span><span class="cat">'+esc(s.cat)+'</span><span style="flex:1"></span><button class="btn sm ghost w" data-act="edit" data-col="spots" data-id="'+esc(s.id)+'">Bearbeiten</button></div>'+
+     '<h4>'+esc(s.name)+' <span class="hz">'+esc(s.hanzi)+'</span></h4>'+
+     ((s.dur||s.cost)?'<div class="facts" style="margin-top:0">'+(s.dur?'<span class="fact"><i>Dauer</i>'+esc(s.dur)+'</span>':'')+(s.cost?'<span class="fact"><i>Kosten</i>'+esc(s.cost)+'</span>':'')+'</div>':'')+
+     (s.tip?'<p class="tip">'+esc(s.tip)+'</p>':'')+
+     '<div class="seg w" role="group" aria-label="Status">'+Object.keys(STAT).map(function(k){return '<button data-act="status" data-id="'+esc(s.id)+'" data-v="'+k+'" aria-pressed="'+(st===k)+'">'+STAT[k]+'</button>'}).join('')+'</div></article>'}
+  var groups=stops.map(function(s,i){return {k:s.id,name:s.city,hz:s.hanzi,i:i}}).concat([{k:'__other',name:'Ohne Stadt',hz:'',i:-1}]);
+  var out=groups.map(function(g){
+    var list=vis.filter(function(s){return g.k==='__other'?!idx.hasOwnProperty(s.stop):s.stop===g.k}).sort(function(a,b){return (po[a.prio]||1)-(po[b.prio]||1)||(a.name||'').localeCompare(b.name||'')});
+    if(!list.length)return '';
+    return '<div class="grp" style="--cc:'+(g.i>=0?cc(g.i):'var(--muted)')+'"><h3><span class="dot"></span>'+esc(g.name)+' <span class="hz">'+esc(g.hz)+'</span></h3><div class="grid">'+list.map(card).join('')+'</div></div>'}).join('');
+  $('#spotList').innerHTML=out||'<div class="empty">'+(sp.length?'Keine Spots für diese Filter.':'Noch keine Spots. Füge einen hinzu oder bitte Claude um Vorschläge.')+'</div>';
+
+  /* Todos */
+  var gs=[],gm={};S.todos.slice().sort(function(a,b){return (a.ord||0)-(b.ord||0)}).forEach(function(t){var g=t.group||'Allgemein';if(!gm[g]){gm[g]=[];gs.push(g)}gm[g].push(t)});
+  $('#todoList').innerHTML=gs.length?gs.map(function(g){var l=gm[g],d=l.filter(function(t){return t.done}).length;
+    return '<div class="card"><h3>'+esc(g)+'<small>'+d+' / '+l.length+'</small></h3><div class="bar"><i style="width:'+(d/l.length*100)+'%"></i></div>'+
+    l.map(function(t){return '<div class="todo"><label><input type="checkbox" data-act="todo" data-id="'+esc(t.id)+'"'+(t.done?' checked':'')+'><span>'+esc(t.text)+'</span></label><button class="x w" data-act="deltodo" data-id="'+esc(t.id)+'" aria-label="Aufgabe löschen">&times;</button></div>'}).join('')+'</div>'}).join(''):'<div class="empty">Noch keine Aufgaben.</div>';
+  $('#groups').innerHTML=gs.map(function(g){return '<option value="'+esc(g)+'">'}).join('');
+
+  /* Hinweise */
+  $('#noteList').innerHTML=S.notes.length?S.notes.slice().sort(function(a,b){return (a.ord||0)-(b.ord||0)}).map(function(n){
+    return '<div class="card hint '+(n.tone==='warn'?'warn':'')+'"><h3>'+esc(n.title)+'</h3><p>'+esc(n.body)+'</p><button class="btn sm ghost w" data-act="edit" data-col="notes" data-id="'+esc(n.id)+'">Bearbeiten</button></div>'}).join(''):'<div class="empty">Noch keine Hinweise.</div>';
+  renderMap(stops,legs);
+}
+
+/* Karte */
+var M={view:'china'},chart=null,lastSig='';
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function hasXY(o){return typeof o.lng==='number'&&typeof o.lat==='number'}
+function hav(a,b){var r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lng-a.lng)*r,x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);return 12742*Math.asin(Math.sqrt(x))}
+function hop(d){var rk=d*1.3;if(rk<=1.6)return 'zu Fuß, ca. '+Math.max(1,Math.round(rk*13))+' Min';return 'Metro oder Taxi, ca. '+Math.round(rk*2.5+10)+' Min'}
+function kmf(d){return d<10?d.toFixed(1).replace('.',','):Math.round(d)}
+function renderMap(stops,legs){
+  var info=$('#mapInfo'),box=$('#map');
+  var geo=stops.filter(hasXY);
+  if(M.view!=='china'&&!geo.some(function(s){return s.id===M.view}))M.view='china';
+  $('#mapChips').innerHTML='<button class="chip" data-act="mview" data-id="china" aria-pressed="'+(M.view==='china')+'">Gesamtkarte</button>'+geo.map(function(s){var i=stops.indexOf(s);
+    return '<button class="chip" style="--cc:'+cc(i)+'" data-act="mview" data-id="'+esc(s.id)+'" aria-pressed="'+(M.view===s.id)+'"><span class="dot"></span>'+esc(s.city)+'</button>'}).join('');
+  if(!window.echarts||!echarts.getMap||!echarts.getMap('china')){box.innerHTML='<div class="empty" style="margin:16px">Die Kartenbibliothek konnte nicht geladen werden. Die Verbindungen findest du unter „Route &amp; Transport“.</div>';info.innerHTML='';return}
+  if(!geo.length){if(chart){chart.dispose();chart=null}box.innerHTML='<div class="empty" style="margin:16px">Noch keine Koordinaten. Trage bei den Stopps Längen- und Breitengrad ein.</div>';info.innerHTML='';return}
+  var T={ink:cssv('--ink'),muted:cssv('--muted'),line:cssv('--line'),s2:cssv('--surface-2'),surf:cssv('--surface'),accent:cssv('--accent'),aink:cssv('--accent-ink'),c4:cssv('--c4'),c5:cssv('--c5'),onc:cssv('--on-c'),bg:cssv('--bg')};
+  var W=box.clientWidth,narrow=W<600;
+  var spotsXY=S.spots.filter(hasXY);
+  var opt,html='';
+  if(M.view==='china'){
+    var trains=[],flights=[],cons='';
+    for(var i=0;i<geo.length-1;i++){var a=geo[i],b=geo[i+1];
+      var lg=legs.filter(function(l){return (l.seq||0)>(a.seq||0)&&(l.seq||0)<(b.seq||0)})[0]||{};
+      var fl=/flug/i.test(lg.mode||''),tip=esc(a.city)+' → '+esc(b.city)+'<br>'+esc(lg.mode||'')+(lg.dur?', '+esc(lg.dur):'')+(lg.price?'<br>'+esc(lg.price):'');
+      (fl?flights:trains).push({coords:[[a.lng,a.lat],[b.lng,b.lat]],tip:tip});
+      cons+='<li><span class="ico">'+icon(lg.mode)+'</span><div><b>'+esc(a.city)+' &rarr; '+esc(b.city)+'</b><br>'+esc(lg.mode||'Verbindung offen')+(lg.dur?', '+esc(lg.dur):'')+(lg.price?', '+esc(lg.price):'')+(lg.tip?'<br><span style="color:var(--muted)">'+esc(lg.tip)+'</span>':'')+'</div></li>'}
+    var cityPts=geo.map(function(s,i){return {name:s.city,lbl:s.city+(s.hanzi?' '+s.hanzi:''),value:[s.lng,s.lat],itemStyle:{color:cssv('--c'+((i%6)+1))},label:{position:s.id==='hangzhou'?'bottom':(s.lng>112?'right':'left')}}});
+    var spPts=spotsXY.map(function(p){var si=stops.findIndex(function(s){return s.id===p.stop});return {name:p.name+(p.hanzi?' '+p.hanzi:''),value:[p.lng,p.lat],itemStyle:{color:si>=0?cssv('--c'+((si%6)+1)):T.muted}}});
+    var ptxt={color:T.ink};
+    opt={backgroundColor:'transparent',animation:false,
+     tooltip:{trigger:'item',confine:true,formatter:function(p){return p.data&&p.data.tip?p.data.tip:esc(p.name||'')}},
+     geo:{map:'china',roam:true,zoom:narrow?1.1:1.35,center:[113,34.5],label:{emphasis:{show:false}},itemStyle:{areaColor:T.s2,borderColor:T.line,borderWidth:.6,emphasis:{areaColor:T.s2}},emphasis:{itemStyle:{areaColor:T.s2},label:{show:false}}},
+     series:[
+      {type:'lines',coordinateSystem:'geo',zlevel:2,symbol:['none','arrow'],symbolSize:9,lineStyle:{color:T.accent,width:2.5,curveness:.15},data:trains},
+      {type:'lines',coordinateSystem:'geo',zlevel:2,symbol:['none','arrow'],symbolSize:9,lineStyle:{color:T.c4,width:2.5,type:'dashed',curveness:.2},data:flights},
+      {type:'scatter',coordinateSystem:'geo',zlevel:3,symbolSize:5,itemStyle:{opacity:.6},data:spPts},
+      {type:'scatter',coordinateSystem:'geo',zlevel:4,symbolSize:15,label:{show:true,formatter:function(p){return p.data.lbl},color:T.ink,fontWeight:700,fontSize:narrow?11:13,textBorderColor:T.s2,textBorderWidth:3},itemStyle:{borderColor:T.bg,borderWidth:2},data:cityPts}]};
+    html='<div class="legend"><span><i></i>Zug</span><span><i class="d"></i>Flug</span><span>Kleine Punkte: Spots. Zoomen und Verschieben mit Maus oder Fingern.</span></div><ul class="cons">'+cons+'</ul>'+
+      '<p class="meta" style="margin-top:10px">Anreise und Rückflug sind nicht eingezeichnet, weil der Heimatflughafen noch offen ist.</p>';
+  } else {
+    var st=geo.filter(function(s){return s.id===M.view})[0];
+    var cosl=Math.cos(st.lat*Math.PI/180);
+    function pr(o){return [(o.lng-st.lng)*cosl*111.32,(o.lat-st.lat)*110.57]}
+    var all=spotsXY.filter(function(p){return p.stop===st.id}).map(function(p){return Object.assign({d:hav(st,p)},p)});
+    var near=all.filter(function(p){return p.d<=15}),far=all.filter(function(p){return p.d>15}).sort(function(a,b){return a.d-b.d});
+    var chain=[],pool=near.slice(),pos=st;
+    while(pool.length){pool.sort(function(a,b){return hav(pos,a)-hav(pos,b)});var nx=pool.shift();chain.push(nx);pos=nx}
+    var xy=chain.map(pr),xs=xy.map(function(p){return p[0]}),ys=xy.map(function(p){return p[1]});
+    if(!xy.length){xs=[-2,2];ys=[-2,2]}
+    var mnx=Math.min.apply(null,xs),mxx=Math.max.apply(null,xs),mny=Math.min.apply(null,ys),mxy=Math.max.apply(null,ys);
+    var sx=Math.max(mxx-mnx,1.5),sy=Math.max(mxy-mny,1.5),px=sx*.14,py=sy*.14;
+    var cx=(mnx+mxx)/2,cy=(mny+mxy)/2,hw=sx/2+px,hh=sy/2+py,H=box.clientHeight||400,ar=W/H;
+    if(hw/hh<ar)hw=hh*ar;else hh=hw/ar;
+    var span=Math.max(hw,hh)*2,iv=[.5,1,2,5,10,20].filter(function(v){return span/v<=14})[0]||20;
+    var colr={must:T.accent,nice:T.c5,opt:T.muted};
+    var pts=chain.map(function(p,i){return {value:xy[i],n:i+1,name:p.name,hz:p.hanzi,dur:p.dur,itemStyle:{color:colr[p.prio]||T.c5}}});
+    var ax={type:'value',show:true,axisLine:{show:false},axisTick:{show:false},axisLabel:{show:false},interval:iv,splitLine:{show:true,lineStyle:{color:T.line,type:'dashed',opacity:.7}}};
+    opt={backgroundColor:'transparent',animation:false,
+     tooltip:{trigger:'item',confine:true,formatter:function(p){return p.data&&p.data.n?'<b>'+p.data.n+'. '+esc(p.data.name)+'</b> '+esc(p.data.hz||'')+(p.data.dur?'<br>'+esc(p.data.dur):''):'Stadtzentrum (Orientierung)'}},
+     grid:{left:4,right:4,top:4,bottom:4},
+     xAxis:Object.assign({min:cx-hw,max:cx+hw},ax),yAxis:Object.assign({min:cy-hh,max:cy+hh},ax),
+     series:[
+      {type:'line',data:xy,symbol:'none',silent:true,lineStyle:{color:T.muted,width:1.5,type:'dashed'},z:1},
+      {type:'scatter',data:[{value:[0,0]}],symbol:'diamond',symbolSize:11,itemStyle:{color:T.ink,opacity:.5},z:2},
+      {type:'scatter',data:pts,symbolSize:26,label:{show:true,formatter:function(p){return p.data.n},color:T.aink,fontWeight:700,fontSize:12},itemStyle:{borderColor:T.bg,borderWidth:2},z:3}]};
+    html='<div class="legend"><span>Rasterlinien = '+String(iv).replace('.',',')+' km</span><span>Raute: Stadtzentrum</span><span>Reihenfolge ist ein Vorschlag nach kürzesten Wegen, Zeiten sind grobe Schätzungen aus der Luftlinie.</span></div>';
+    if(chain.length){
+      html+='<ol class="wegs">'+chain.map(function(p,i){
+        var nxt=chain[i+1];
+        return '<li><span class="n '+esc(p.prio)+'">'+(i+1)+'</span><div><div class="nm">'+esc(p.name)+' <span class="hz">'+esc(p.hanzi)+'</span></div>'+(nxt?'<div class="go">↓ '+hop(hav(p,nxt))+' ('+kmf(hav(p,nxt))+' km Luftlinie) bis '+esc(nxt.name)+'</div>':'')+'</div></li>'}).join('')+'</ol>';
+    } else html+='<div class="empty" style="margin-top:14px">In '+esc(st.city)+' gibt es noch keine Spots mit Koordinaten.</div>';
+    if(far.length)html+='<div class="exc"><h3>Ausflüge ab '+esc(st.city)+'</h3><ul>'+far.map(function(p){return '<li><b>'+esc(p.name)+' <span class="hz">'+esc(p.hanzi)+'</span></b>ca. '+kmf(p.d)+' km Luftlinie<br>'+esc(p.via||'Taxi, Bus oder Zug, Anreise noch eintragen')+'</li>'}).join('')+'</ul></div>';
+  }
+  var sig=JSON.stringify([M.view,opt.series.map(function(s){return s.data}),T,narrow]);
+  info.innerHTML=html;
+  if(sig===lastSig&&chart)return;
+  lastSig=sig;
+  if(!chart||chart.getDom()!==box||!box.firstChild){if(chart)chart.dispose();box.innerHTML='';chart=echarts.init(box);if(window.ResizeObserver)new ResizeObserver(function(){chart&&chart.resize()}).observe(box)}
+  chart.setOption(opt,true);
+}
+function remap(){lastSig='';sched()}
+try{new MutationObserver(remap).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',remap)}catch(e){}
+
+/* Schreiben */
+function fail(e){banner('Speichern nicht möglich: '+((e&&e.message)||'unbekannter Fehler'))}
+function maxSeq(){return Math.max.apply(null,[0].concat(S.stops.map(function(x){return x.seq||0}),S.legs.map(function(x){return x.seq||0})))}
+function upd(col,id,data){return db.doc(col+'/'+id).update(data).catch(fail)}
+
+var dlg=$('#dlg'),dform=$('#dlgForm'),cur=null;
+function openDlg(){try{dlg.showModal()}catch(e){dlg.setAttribute('open','')}}
+function closeDlg(){try{dlg.close()}catch(e){dlg.removeAttribute('open')}}
+function openModal(col,id,pre){
+  var sc=SCH[col],row=id?S[col].filter(function(r){return r.id===id})[0]:Object.assign({},pre||{});if(!row)return;
+  cur={col:col,id:id};
+  dform.innerHTML='<h3>'+(id?sc.label+' bearbeiten':sc.label+' hinzufügen')+'</h3>'+sc.f.map(function(f){
+    var k=f[0],v=row[k]==null?'':row[k],inp;
+    if(f[2]==='area')inp='<textarea class="field" id="f_'+k+'" rows="3">'+esc(v)+'</textarea>';
+    else if(f[2]==='select'){var o=f[3]();if(v&&!o.some(function(p){return p[0]===v}))o.push([v,v]);inp='<select class="field" id="f_'+k+'">'+o.map(function(p){return '<option value="'+esc(p[0])+'"'+(p[0]===v?' selected':'')+'>'+esc(p[1])+'</option>'}).join('')+'</select>'}
+    else if(f[2]==='bool'||f[2]==='bool2'){var lab=f[2]==='bool'?['Noch offen','Gebucht']:['Offen','Erledigt'];inp='<select class="field" id="f_'+k+'"><option value="0">'+lab[0]+'</option><option value="1"'+(v?' selected':'')+'>'+lab[1]+'</option></select>'}
+    else inp='<input class="field" id="f_'+k+'" type="'+f[2]+'"'+(f[2]==='number'?' step="any"':'')+' value="'+esc(v)+'">';
+    return '<label for="f_'+k+'">'+f[1]+inp+'</label>'}).join('')+
+    '<div class="dlg-actions">'+(id?'<button type="button" class="btn danger sp" id="dDel">Löschen</button>':'')+'<button type="button" class="btn" id="dCancel">Abbrechen</button><button type="submit" class="btn primary">Speichern</button></div>';
+  openDlg();
+}
+function openTrip(){
+  var r=tripRange();cur={col:'trip'};
+  dform.innerHTML='<h3>Reisedaten</h3><label for="t_s">Abflug<input class="field" id="t_s" type="date" value="'+esc(r[0]||'')+'"></label><label for="t_e">Rückkehr / Abreise aus Peking<input class="field" id="t_e" type="date" value="'+esc(r[1]||'')+'"></label>'+
+   '<label for="t_n">Alle Termine verschieben um (Tage, auch negativ)<input class="field" id="t_n" type="number" value="0" step="1"></label><p class="meta">Die Verschiebung betrifft Abflug, Rückkehr, alle Stopps und alle Fahrten. Zeitgebundene Hinweise wie Feiertage danach prüfen.</p>'+
+   '<div class="dlg-actions"><button type="button" class="btn" id="dCancel">Abbrechen</button><button type="submit" class="btn primary">Speichern</button></div>';
+  openDlg();
+}
+function sh(s,n){var t=pd(s);return t==null?s:iso(t+n*DAY)}
+dform.addEventListener('submit',function(e){
+  e.preventDefault();if(!cur)return;
+  var p;
+  if(cur.col==='trip'){
+    var n=parseInt($('#t_n').value,10)||0,a=$('#t_s').value,b=$('#t_e').value;
+    p=[db.doc('trip/main').set(Object.assign({},S.trip||{},{startDate:sh(a,n),endDate:sh(b,n)}))];
+    if(n){S.stops.forEach(function(s){p.push(upd('stops',s.id,{arrive:sh(s.arrive,n),depart:sh(s.depart,n)}))});S.legs.forEach(function(l){if(l.date)p.push(upd('legs',l.id,{date:sh(l.date,n)}))})}
+  } else {
+    var sc=SCH[cur.col],data={};
+    sc.f.forEach(function(f){var el=$('#f_'+f[0]);if(!el)return;var v=el.value;
+      if(f[2]==='number')data[f[0]]=v===''?null:Number(v);else if(f[2]==='bool'||f[2]==='bool2')data[f[0]]=v==='1';else data[f[0]]=v.trim()});
+    if(cur.id)p=[upd(cur.col,cur.id,data)];
+    else{
+      if(cur.col==='stops'||cur.col==='legs'){if(data.seq==null)data.seq=maxSeq()+1}
+      if(cur.col==='spots'){if(!data.prio)data.prio='nice';if(!data.status)data.status='idea'}
+      if(cur.col==='todos')data.ord=Math.max.apply(null,[0].concat(S.todos.map(function(t){return t.ord||0})))+1;
+      if(cur.col==='notes')data.ord=Math.max.apply(null,[0].concat(S.notes.map(function(t){return t.ord||0})))+1;
+      p=[db.collection(cur.col).add(data)];
+    }
+  }
+  Promise.all(p).catch(fail);closeDlg();
+});
+dform.addEventListener('click',function(e){
+  if(e.target.id==='dCancel')closeDlg();
+  if(e.target.id==='dDel'){
+    if(e.target.dataset.sure){db.doc(cur.col+'/'+cur.id).delete().catch(fail);closeDlg()}
+    else{e.target.dataset.sure='1';e.target.textContent='Wirklich löschen?'}
+  }
+});
+
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-act]');if(!el||!db)return;
+  var a=el.dataset.act,id=el.dataset.id;
+  if(a==='edit')openModal(el.dataset.col,id);
+  else if(a==='add'){var pre={};if(el.dataset.col==='spots'&&F.stop!=='all')pre.stop=F.stop;openModal(el.dataset.col,null,pre)}
+  else if(a==='trip')openTrip();
+  else if(a==='book'){var l=S.legs.filter(function(x){return x.id===id})[0];if(l)upd('legs',id,{booked:!l.booked})}
+  else if(a==='status')upd('spots',id,{status:el.dataset.v});
+  else if(a==='deltodo')db.doc('todos/'+id).delete().catch(fail);
+  else if(a==='fstop'){F.stop=id;render()}
+  else if(a==='mview'){M.view=id;render()}
+  else if(a==='logout'){sb.auth.signOut().then(function(){location.reload()})}
+  else if(a==='gospots'){F.stop=id;render();$('#spots').scrollIntoView()}
+});
+document.addEventListener('change',function(e){var el=e.target;if(el.dataset&&el.dataset.act==='todo'&&db)upd('todos',el.dataset.id,{done:el.checked})});
+$('#fPrio').addEventListener('change',function(e){F.prio=e.target.value;render()});
+$('#fStatus').addEventListener('change',function(e){F.status=e.target.value;render()});
+$('#fQ').addEventListener('input',function(e){F.q=e.target.value;render()});
+$('#todoForm').addEventListener('submit',function(e){
+  e.preventDefault();if(!db)return;
+  var t=$('#todoText').value.trim();if(!t)return;
+  var ord=Math.max.apply(null,[0].concat(S.todos.map(function(x){return x.ord||0})))+1;
+  db.collection('todos').add({text:t,group:$('#todoGroup').value.trim()||'Allgemein',done:false,ord:ord}).catch(fail);
+  $('#todoText').value='';
+});
+
+/* Start */
+render();
+var timer=setTimeout(function(){if(!(loaded.stops&&loaded.legs&&loaded.spots))banner('Die Daten sind gerade nicht erreichbar. Angezeigt wird, was schon geladen ist.')},10000);
+/* Supabase-Anbindung: gleiche Schnittstelle wie zuvor, Daten liegen in der Tabelle public.docs */
+var sb=null;
+function makeDb(client){
+  var store={},ls={},ready=false,rows=0;
+  function put(c,i,d){(store[c]=store[c]||{})[i]=d}
+  function emit(c){(ls[c]||[]).forEach(function(f){f()})}
+  function listen(c,f){(ls[c]=ls[c]||[]).push(f);if(ready)f()}
+  function P(b){return Promise.resolve(b).then(function(r){if(r&&r.error)throw r.error;return r})}
+  function load(){return P(client.from('docs').select('collection,id,data')).then(function(r){store={};r.data.forEach(function(x){put(x.collection,x.id,x.data)});rows=r.data.length;ready=true;Object.keys(ls).forEach(emit)})}
+  function W(p){return p.catch(function(e){load().catch(function(){});throw e})}
+  function write(c,i,d){put(c,i,d);emit(c);return W(P(client.from('docs').upsert({collection:c,id:i,data:d})))}
+  function snapCol(c){var o=store[c]||{};return {docs:Object.keys(o).map(function(i){return {id:i,exists:true,data:function(){return o[i]}}})}}
+  function snapDoc(c,i){var d=(store[c]||{})[i];return {id:i,exists:!!d,data:function(){return d}}}
+  client.channel('docs-live').on('postgres_changes',{event:'*',schema:'public',table:'docs'},function(p){
+    if(p.eventType==='DELETE'){var o=p.old||{};if(store[o.collection])delete store[o.collection][o.id];emit(o.collection)}
+    else if(p.new){put(p.new.collection,p.new.id,p.new.data);emit(p.new.collection)}
+  }).subscribe();
+  return {
+    load:load,
+    info:function(){return {ready:ready,rows:rows}},
+    doc:function(path){var s=path.split('/'),c=s[0],i=s[1];return {
+      onSnapshot:function(next){listen(c,function(){next(snapDoc(c,i))})},
+      set:function(d){return write(c,i,Object.assign({},d))},
+      update:function(d){return write(c,i,Object.assign({},(store[c]||{})[i]||{},d))},
+      delete:function(){if(store[c])delete store[c][i];emit(c);return W(P(client.from('docs').delete().eq('collection',c).eq('id',i)))}
+    }},
+    collection:function(c){return {
+      onSnapshot:function(next){listen(c,function(){next(snapCol(c))})},
+      add:function(d){var i=(self.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2)).replace(/-/g,'').slice(0,10);return write(c,i,Object.assign({},d)).then(function(){return {id:i}})}
+    }}
+  };
+}
+function err(e){banner('Daten konnten nicht geladen werden ('+((e&&(e.code||e.message))||'Fehler')+').')}
+function start(){
+  var cfg=window.APP_CONFIG||{};
+  if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){banner('Supabase ist noch nicht eingerichtet. Trage URL und anon key in config.js ein.');return}
+  sb=supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  var started=false;
+  function gate(session){
+    if(!session){$('#auth').hidden=false;return}
+    $('#auth').hidden=true;
+    if(started)return;started=true;
+    var d=makeDb(sb);db=d;
+    d.load().then(function(){
+      if(!d.info().rows)banner('Keine Daten gefunden. Wurde seed.sql ausgeführt und ist deine E-Mail in allowed_users eingetragen?');
+      d.doc('trip/main').onSnapshot(function(s){S.trip=s.exists?s.data():null;loaded.trip=1;sched()});
+      COLS.forEach(function(c){d.collection(c).onSnapshot(function(q){S[c]=q.docs.map(function(x){return Object.assign({id:x.id},x.data())});loaded[c]=1;sched()})});
+    }).catch(err);
+  }
+  sb.auth.getSession().then(function(r){gate(r.data&&r.data.session)}).catch(err);
+  sb.auth.onAuthStateChange(function(ev,session){if(session)gate(session)});
+  $('#authForm').addEventListener('submit',function(e){
+    e.preventDefault();var m=$('#authMsg');m.textContent='Wird gesendet …';
+    sb.auth.signInWithOtp({email:$('#authMail').value.trim(),options:{emailRedirectTo:location.origin+location.pathname}}).then(function(r){
+      m.textContent=r.error?'Das hat nicht geklappt: '+r.error.message:'Link gesendet. Öffne die E-Mail auf diesem Gerät und tippe auf den Link.'});
+  });
+}
+start();
+})();
+</script>
+</body>
+</html>
