@@ -589,7 +589,7 @@ $('#todoForm').addEventListener('submit',function(e){
 
 /* Start */
 render();
-var timer=setTimeout(function(){if(!(loaded.stops&&loaded.legs&&loaded.spots))banner('Die Daten sind gerade nicht erreichbar. Angezeigt wird, was schon geladen ist.')},10000);
+var timer=setTimeout(function(){if(!(loaded.stops&&loaded.legs&&loaded.spots)&&#banner.hidden)banner('Die Daten sind gerade nicht erreichbar. Angezeigt wird, was schon geladen ist.')},10000);
 /* Supabase-Anbindung: gleiche Schnittstelle wie zuvor, Daten liegen in der Tabelle public.docs */
 var sb=null;
 function makeDb(client){
@@ -622,7 +622,7 @@ function makeDb(client){
     }}
   };
 }
-function err(e){banner('Daten konnten nicht geladen werden ('+((e&&(e.code||e.message))||'Fehler')+').')}
+function err(e){banner('Daten konnten nicht geladen werden: '+((e&&[e.code,e.message].filter(Boolean).join(' | '))||'unbekannter Fehler'))}
 function start(){
   var cfg=window.APP_CONFIG||{};
   if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){banner('Supabase ist noch nicht eingerichtet. Trage URL und anon key in config.js ein.');return}
