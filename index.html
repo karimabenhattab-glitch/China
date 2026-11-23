@@ -589,7 +589,7 @@ $('#todoForm').addEventListener('submit',function(e){
 
 /* Start */
 render();
-var timer=setTimeout(function(){if(!(loaded.stops&&loaded.legs&&loaded.spots)&&#banner.hidden)banner('Die Daten sind gerade nicht erreichbar. Angezeigt wird, was schon geladen ist.')},10000);
+var timer=setTimeout(function(){if(!(loaded.stops&&loaded.legs&&loaded.spots)&&$('#banner').hidden)banner('Die Daten sind gerade nicht erreichbar. Angezeigt wird, was schon geladen ist.')},10000);
 /* Supabase-Anbindung: gleiche Schnittstelle wie zuvor, Daten liegen in der Tabelle public.docs */
 var sb=null;
 function makeDb(client){
