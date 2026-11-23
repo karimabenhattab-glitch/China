@@ -270,10 +270,13 @@ body.ro .w{display:none!important}
 <div class="auth" id="auth" hidden>
   <form id="authForm">
     <h2>China-Reise</h2>
-    <p>Melde dich mit deiner E-Mail-Adresse an. Du bekommst einen Link, der dich einloggt. Nur freigeschaltete Adressen sehen die Reise.</p>
+    <p>Melde dich mit E-Mail-Adresse und Passwort an. Nur freigeschaltete Adressen sehen die Reise.</p>
     <label for="authMail" style="font-size:12px;font-weight:600;color:var(--muted)">E-Mail</label>
-    <input class="field" id="authMail" type="email" autocomplete="email" required>
-    <button class="btn primary" type="submit">Login-Link senden</button>
+    <input class="field" id="authMail" type="email" autocomplete="email">
+    <label for="authPw" style="font-size:12px;font-weight:600;color:var(--muted)">Passwort</label>
+    <input class="field" id="authPw" type="password" autocomplete="current-password">
+    <button class="btn primary" type="submit">Anmelden</button>
+    <button class="btn ghost" type="button" id="authLink">Stattdessen Login-Link per E-Mail senden</button>
     <p id="authMsg" role="status"></p>
   </form>
 </div>
@@ -642,8 +645,17 @@ function start(){
   sb.auth.getSession().then(function(r){gate(r.data&&r.data.session)}).catch(err);
   sb.auth.onAuthStateChange(function(ev,session){if(session)gate(session)});
   $('#authForm').addEventListener('submit',function(e){
-    e.preventDefault();var m=$('#authMsg');m.textContent='Wird gesendet …';
-    sb.auth.signInWithOtp({email:$('#authMail').value.trim(),options:{emailRedirectTo:location.origin+location.pathname}}).then(function(r){
+    e.preventDefault();var m=$('#authMsg'),pw=$('#authPw').value;
+    if(!pw){m.textContent='Bitte Passwort eingeben oder unten den Login-Link anfordern.';return}
+    m.textContent='Anmeldung …';
+    sb.auth.signInWithPassword({email:$('#authMail').value.trim(),password:pw}).then(function(r){
+      m.textContent=r.error?'Anmeldung nicht möglich: '+r.error.message:''});
+  });
+  $('#authLink').addEventListener('click',function(){
+    var mail=$('#authMail').value.trim(),m=$('#authMsg');
+    if(!mail){m.textContent='Bitte zuerst die E-Mail-Adresse eingeben.';return}
+    m.textContent='Wird gesendet …';
+    sb.auth.signInWithOtp({email:mail,options:{emailRedirectTo:location.origin+location.pathname}}).then(function(r){
       m.textContent=r.error?'Das hat nicht geklappt: '+r.error.message:'Link gesendet. Öffne die E-Mail auf diesem Gerät und tippe auf den Link.'});
   });
 }
